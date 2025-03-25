@@ -10,7 +10,7 @@ module InstructionMem(
         $readmemh("instructions.mem", instructions); // Load memory from hex file
     end
     
-    // Fixed: Changed to combinational logic for instruction fetch
+    
     always_comb begin
         instruction = instructions[instraddr[31:2]]; // Address divided by 4 for word alignment
     end
