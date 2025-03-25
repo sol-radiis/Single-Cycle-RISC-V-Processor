@@ -7,14 +7,33 @@ module Processor(
     output logic [31:0] ALU_result, mem_data, write_data,
     output logic RegWrite, MemRead, MemWrite
 );
-    // Program Counter (pc)
-    // Note: We use only pc, not pc_next since we're ignoring branch/jump
+    logic [31:0] pc_next;
+    logic [31:0] imm_ext;
+    logic Branch, Jump, Jalr;
+    logic Branch_taken;
+
+    // Program Counter Update
     always_ff @(posedge clk or posedge rst) begin
         if (rst)
             pc <= 32'b0;
         else
-            pc <= pc + 32'd4; // Simple PC update, ignoring branches/jumps
+            pc <= pc_next;
     end
+
+    // Next PC Logic
+    assign Branch_taken = Branch & (
+        (instruction[14:12] == 3'b000 && ALU_result == 0) |  // BEQ
+        (instruction[14:12] == 3'b001 && ALU_result != 0) |  // BNE
+        (instruction[14:12] == 3'b100 && ALU_result[0]) |    // BLT
+        (instruction[14:12] == 3'b101 && ~ALU_result[0]) |   // BGE
+        (instruction[14:12] == 3'b110 && ALU_result[0]) |    // BLTU
+        (instruction[14:12] == 3'b111 && ~ALU_result[0])     // BGEU
+    );
+
+    assign pc_next = (Jalr) ? (reg_data1 + imm_ext) & ~32'b1 :  // JALR (aligned to even addresses)
+                     (Jump) ? pc + imm_ext : 
+                     (Branch_taken) ? pc + imm_ext : 
+                     pc + 32'd4;
 
     // Instruction Memory
     InstructionMem instr_mem (
@@ -24,8 +43,8 @@ module Processor(
 
     // Decode Stage
     logic [4:0] rs1, rs2, rd;
-    logic [31:0] imm_ext;
-    logic ALUSrc, MemtoReg;  // Control signals
+    logic ALUSrc, MemtoReg;
+    logic [3:0] ALU_control;
 
     assign rs1 = instruction[19:15];
     assign rs2 = instruction[24:20];
@@ -47,10 +66,6 @@ module Processor(
         .Readdata2(reg_data2)
     );
 
-    // Control Unit - branch and jump signals will be ignored
-    logic [3:0] ALU_control;
-    logic Branch, Jump; // Declared but unused since we're ignoring branch/jump
-
     ControlUnit controller(
         .opcode(instruction[6:0]),
         .funct3(instruction[14:12]),
@@ -61,8 +76,9 @@ module Processor(
         .MemWrite(MemWrite),
         .MemtoReg(MemtoReg),
         .ALUOp(ALU_control),
-        .Branch(Branch),  // Connected but ignored
-        .Jump(Jump)       // Connected but ignored
+        .Branch(Branch),  
+        .Jump(Jump),
+        .Jalr(Jalr)
     );
 
     // Execute Stage
