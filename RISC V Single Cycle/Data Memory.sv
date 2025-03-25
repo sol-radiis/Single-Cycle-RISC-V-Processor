@@ -9,7 +9,7 @@ module DataMemory(
     //prep
     reg[31:0] Data[0:511];
     
-    // Fixed: Changed to proper async reset sensitivity list
+    
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             integer i;
@@ -17,12 +17,12 @@ module DataMemory(
                 Data[i] <= 0;
             end    
         end else if (write) begin
-            Data[address[31:2]] <= Writedata; // Address divided by 4 for word alignment
+            Data[address[31:2]] <= Writedata; 
         end    
     end  
     
-    // Fixed: Changed to blocking assignment for combinational logic
+   
     always_comb begin
-        ReadData = Data[address[31:2]]; // Address divided by 4 for word alignment
+        ReadData = Data[address[31:2]]; 
     end         
 endmodule
