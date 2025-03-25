@@ -12,6 +12,6 @@ module InstructionMem(
     
     
     always_comb begin
-        instruction = instructions[instraddr[31:2]]; // Address divided by 4 for word alignment
+        instruction = instructions[instraddr[31:2]]; 
     end
 endmodule
