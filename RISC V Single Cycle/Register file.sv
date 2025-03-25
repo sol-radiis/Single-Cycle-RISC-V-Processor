@@ -8,7 +8,7 @@ module registerFile(
     //prep memory
     reg[31:0] Registers[31:0];
     
-    // Fixed: Changed to non-blocking assignment for sequential logic
+    
     always_ff @(posedge clk) begin
         if (wd && WD != 0) begin 
             Registers[WD] <= writeData;
